@@ -140,6 +140,7 @@ test("the Inbox archive filter shares Preferences, persists, and follows live ar
 
   await recent.click()
   await expect(page.locator('[data-component="composer-editor"]')).toBeEditable()
+  workspace.sessions[0]!.time.archived = T0 + 40
   await workspace.push([
     {
       id: "evt_filter_archive",
@@ -151,6 +152,7 @@ test("the Inbox archive filter shares Preferences, persists, and follows live ar
   ])
   await expect(recent).toBeHidden()
   await expect(sidebar.getByText("Sessions you work on will appear here", { exact: true })).toBeVisible()
+  workspace.sessions[0]!.time.archived = undefined
   await workspace.push([
     {
       id: "evt_filter_unarchive",
