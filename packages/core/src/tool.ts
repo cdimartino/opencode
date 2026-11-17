@@ -9,6 +9,7 @@ import { Context, Effect, Layer, Ref, Result, Schema, SchemaIssue, Types } from 
 import { makeLocationNode } from "@opencode/util/effect/app-node"
 import type { Agent } from "./agent.js"
 import { CodeModeCatalog } from "./codemode/catalog.js"
+import { CodeModeJob } from "./codemode/job.js"
 import { CodeModeTool } from "./codemode/tool.js"
 import { Image } from "./image.js"
 import { Permission } from "./permission.js"
@@ -181,8 +182,19 @@ const layer = Layer.effect(
       }
     })
 
-    const run = (tool: Tool.Info, name: string, input: unknown, context: Tool.Context) =>
-      beforeExecute(name, input, context).pipe(Effect.flatMap((event) => executeTool(tool, name, event.input, context)))
+    // A plugin may rename a call in a Code Mode program, as it may a direct call, to another of the program's tools.
+    const run = Effect.fnUntraced(function* (
+      tools: ReadonlyMap<string, Tool.Info>,
+      tool: Tool.Info,
+      name: string,
+      input: unknown,
+      context: Tool.Context,
+    ) {
+      const event = yield* beforeExecute(name, input, context)
+      const selected = event.tool === name ? tool : tools.get(event.tool)
+      if (!selected) return yield* new Tool.Error({ message: `Tool is not available for this request: ${event.tool}` })
+      return yield* executeTool(selected, event.tool, event.input, context)
+    })
 
     let catalog:
       | {
@@ -275,7 +287,7 @@ const layer = Layer.effect(
           const codeModeTool = codeModeEnabled
             ? CodeModeTool.create(
                 codeModeInventory,
-                (name, tool, input, context) => run(tool, name, input, context),
+                (name, tool, input, context) => run(codeModeInventory.tools, tool, name, input, context),
                 permission,
               )
             : undefined
@@ -314,8 +326,11 @@ const layer = Layer.effect(
               if (!requested && input.definitions && (direct.has(event.tool) || codeModeTool?.name === event.tool))
                 return yield* new Tool.Error({ message: `Tool is not available for this request: ${event.tool}` })
               const name = requested?.name ?? event.tool
-              if (name === "execute" && codeModeTool)
-                return yield* executeTool(codeModeTool, name, event.input, context)
+              if (name === "execute" && codeModeTool) {
+                const run = (ctx: Tool.Context) => executeTool(codeModeTool, name, event.input, ctx)
+                const background = yield* CodeModeJob.Current
+                return yield* background ? background(context, run) : run(context)
+              }
               const tool = direct.get(name)
               if (tool) return yield* executeTool(tool, name, event.input, context)
               return yield* new Tool.Error({
@@ -356,7 +371,7 @@ const layer = Layer.effect(
                 ...input.context,
                 id: Tool.CallID.make(`call_${input.context.messageID}_${index}`),
               }
-              return yield* run(tool, name, toolInput, context)
+              return yield* run(tools, tool, name, toolInput, context)
             }),
         )
       }),
