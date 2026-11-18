@@ -98,6 +98,7 @@ describe("settings schema", () => {
         backgroundActivity: "left",
         timelineWidth: "comfortable",
         foldUserMessages: false,
+        wrapCodeBlocks: false,
         newQuestionUI: false,
         sidebarOrganize: "list",
         mobileTitlebarPosition: "top",
