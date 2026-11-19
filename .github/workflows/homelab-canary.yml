@@ -1,0 +1,18 @@
+name: Magneto typecheck canary
+on:
+  push:
+    branches: [ci/magneto-typecheck]
+permissions:
+  contents: read
+jobs:
+  typecheck:
+    if: github.repository == 'cdimartino/opencode'
+    runs-on: [self-hosted, Linux, X64, homelab-linux-x64]
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-bun
+      - run: bun run lint
+      - run: bun run typecheck:tsc

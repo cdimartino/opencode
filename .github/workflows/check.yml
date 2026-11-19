@@ -16,7 +16,7 @@ jobs:
   check:
     name: typecheck
     if: ${{ !github.event.pull_request.draft }}
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ${{ fromJSON(github.repository == 'cdimartino/opencode' && github.event_name != 'pull_request' && vars.OPENCODE_CI_POOL == 'homelab' && '["self-hosted","Linux","X64","homelab-linux-x64"]' || '["blacksmith-4vcpu-ubuntu-2404"]') }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
