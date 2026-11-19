@@ -32,7 +32,12 @@ jobs:
 
       # Local `bun run check` uses `bun check`; CI keeps the official TypeScript compiler as the source of truth.
       - name: Typecheck (TypeScript 7.1)
-        run: bun run typecheck:tsc
+        run: |
+          if [[ "$RUNNER_ENVIRONMENT" == self-hosted ]]; then
+            bun turbo typecheck:tsc --concurrency=1
+          else
+            bun run typecheck:tsc
+          fi
 
       # Every GUI package file (app, desktop, gui-plugins, the plugin package's GUI SDK, ui, session-ui) a pull request adds or edits must be free of
       # oxlint problems, warn-level rules (anti-slop) included. Other packages are not affected.
