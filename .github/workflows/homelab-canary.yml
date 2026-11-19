@@ -15,4 +15,17 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup-bun
       - run: bun run lint
-      - run: bun run typecheck:tsc
+      - name: Typecheck serially in the two-vCPU guest
+        run: |
+          set -euo pipefail
+          (
+            while true; do
+              date -u '+%Y-%m-%dT%H:%M:%SZ'
+              grep -E '^(MemAvailable|SwapFree):' /proc/meminfo
+              cat /proc/pressure/memory
+              sleep 30
+            done
+          ) &
+          monitor=$!
+          trap 'kill "$monitor" 2>/dev/null || true; wait "$monitor" 2>/dev/null || true' EXIT
+          bun turbo typecheck:tsc --concurrency=1
