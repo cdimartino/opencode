@@ -1,7 +1,7 @@
 name: Magneto typecheck canary
 on:
   push:
-    branches: [ci/magneto-typecheck]
+    branches: [homelab-magneto-typecheck]
 permissions:
   contents: read
 jobs:
