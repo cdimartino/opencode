@@ -114,15 +114,17 @@ export function useSessionLinks() {
     changed.forEach((sessionID) => used.set(sessionID, labelOf(sessionID)))
     // Toggling the callback marks the block's highlight dirty while keeping the identity OpenTUI
     // checks when terminal capabilities refresh link styling. Dirty blocks highlight on the next
-    // frame, so labels that change within one frame share a single re-highlight.
+    // frame, so labels that change within one frame share a single re-highlight. Another ref, such
+    // as Find's, may wrap `linkChunks`, so blocks are matched by what they rendered.
     const refresh = (renderable: Renderable): void => {
       if (
         renderable instanceof CodeRenderable &&
-        renderable.onChunks === linkChunks &&
+        renderable.onChunks &&
         changed.some((sessionID) => rendered.get(renderable)?.sessionIDs.has(sessionID))
       ) {
+        const callback = renderable.onChunks
         renderable.onChunks = undefined
-        renderable.onChunks = linkChunks
+        renderable.onChunks = callback
         renderable.requestRender()
       }
       renderable.getChildren().forEach(refresh)
