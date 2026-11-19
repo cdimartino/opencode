@@ -5,7 +5,7 @@ import { createAppFixture } from "./fixture/app"
 import { tmpdir } from "./fixture/fixture"
 import { directory, json } from "./fixture/tui-client"
 
-async function fixture(mode: "prompt" | "autoaccept", target: "root" | "child" = "root") {
+async function fixture(mode: "prompt" | "autoaccept", target: "root" | "child" | "greatgrandchild" = "root") {
   const state = await tmpdir()
   const file = path.join(state.path, "test", "tui", "tabs.json")
   await mkdir(path.dirname(file), { recursive: true })
@@ -16,9 +16,9 @@ async function fixture(mode: "prompt" | "autoaccept", target: "root" | "child" =
       cwd: {},
     }),
   )
-  const session = (id: "root" | "child") => ({
+  const session = (id: "root" | "child" | "grandchild" | "greatgrandchild") => ({
     id,
-    parentID: id === "child" ? "root" : undefined,
+    parentID: id === "root" ? undefined : id === "child" ? "root" : id === "grandchild" ? "child" : "grandchild",
     title: id === "root" ? "Background session" : "Child session",
     projectID: "project",
     location: { directory },
@@ -37,8 +37,14 @@ async function fixture(mode: "prompt" | "autoaccept", target: "root" | "child" =
     fetch: async (url, request) => {
       if (url.pathname === "/api/session" && url.searchParams.get("parentID") === "root")
         return json({ data: [session("child")], cursor: {} })
+      if (url.pathname === "/api/session" && url.searchParams.get("parentID") === "child")
+        return json({ data: [session("grandchild")], cursor: {} })
+      if (url.pathname === "/api/session" && url.searchParams.get("parentID") === "grandchild")
+        return json({ data: [session("greatgrandchild")], cursor: {} })
       if (url.pathname === "/api/session/root") return json({ data: session("root") })
       if (url.pathname === "/api/session/child") return json({ data: session("child") })
+      if (url.pathname === "/api/session/grandchild") return json({ data: session("grandchild") })
+      if (url.pathname === "/api/session/greatgrandchild") return json({ data: session("greatgrandchild") })
       if (url.pathname === `/api/session/${target}/permission`)
         return json({ data: replies.length ? [] : [permission] })
       if (url.pathname === `/api/session/${target}/permission/per_command/reply` && request.method === "POST") {
@@ -62,7 +68,7 @@ async function fixture(mode: "prompt" | "autoaccept", target: "root" | "child" =
   }
 }
 
-test.each(["root", "child"] as const)(
+test.each(["root", "child", "greatgrandchild"] as const)(
   "autoaccept approves a background %s without selecting its tab",
   async (target) => {
     await using setup = await fixture("autoaccept", target)

@@ -544,7 +544,12 @@ function App() {
     on([autoacceptSessions, () => client.connection.status()], ([sessions, status]) => {
       if (!sessions || status !== "connected") return
       // Include requests that were already pending before this client connected.
-      void Promise.allSettled(sessions.split("\n").map((sessionID) => data.session.permission.sync(sessionID)))
+      void Promise.allSettled(
+        sessions.split("\n").map(async (sessionID) => {
+          await data.session.sync(sessionID, { children: true })
+          await data.session.permission.sync(sessionID)
+        }),
+      )
     }),
   )
   const autoApproved = new Set<string>()
