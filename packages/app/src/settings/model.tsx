@@ -126,7 +126,6 @@ const generalSchema = Persistence.struct({
     commentary: placementOnlySchema,
   }),
   showCustomAgents: Schema.Boolean,
-  showArchivedSessions: Schema.Boolean,
   showTurnDiffs: Schema.Boolean,
   backgroundActivity: Schema.Literals(["off", "left", "center", "right"]),
   timelineWidth: Schema.Literals(["focused", "comfortable", "wide"]),
@@ -303,7 +302,6 @@ export const defaultSettings: Settings = {
   general: {
     timelineDetail: { ...timelinePresets[2].value },
     showCustomAgents: true,
-    showArchivedSessions: false,
     showTurnDiffs: false,
     backgroundActivity: "left",
     timelineWidth: "comfortable",
@@ -409,13 +407,6 @@ export const { use: useSettings, provider: SettingsProvider } = createSimpleCont
         showCustomAgents,
         setShowCustomAgents(value: boolean) {
           setStore("general", "showCustomAgents", value)
-        },
-        showArchivedSessions: withFallback(
-          () => store.general?.showArchivedSessions,
-          defaultSettings.general.showArchivedSessions,
-        ),
-        setShowArchivedSessions(value: boolean) {
-          setStore("general", "showArchivedSessions", value)
         },
         showTurnDiffs: withFallback(() => store.general?.showTurnDiffs, defaultSettings.general.showTurnDiffs),
         setShowTurnDiffs(value: boolean) {
