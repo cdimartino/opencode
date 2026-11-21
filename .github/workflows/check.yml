@@ -16,7 +16,7 @@ jobs:
   check:
     name: typecheck
     if: ${{ !github.event.pull_request.draft }}
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ${{ fromJSON(github.repository == 'cdimartino/opencode' && github.event_name == 'pull_request' && '["ubuntu-24.04"]' || github.repository == 'cdimartino/opencode' && github.event_name != 'pull_request' && vars.OPENCODE_CI_POOL == 'homelab' && '["self-hosted","Linux","X64","homelab-linux-x64"]' || '["blacksmith-4vcpu-ubuntu-2404"]') }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
@@ -32,7 +32,12 @@ jobs:
 
       # Local `bun run check` uses `bun check`; CI keeps the official TypeScript compiler as the source of truth.
       - name: Typecheck (TypeScript 7.1)
-        run: bun run typecheck:tsc
+        run: |
+          if [[ "$RUNNER_ENVIRONMENT" == self-hosted ]]; then
+            bun turbo typecheck:tsc --concurrency=1
+          else
+            bun run typecheck:tsc
+          fi
 
       # Every GUI package file (app, desktop, gui-plugins, the plugin package's GUI SDK, ui, session-ui) a pull request adds or edits must be free of
       # oxlint problems, warn-level rules (anti-slop) included. Other packages are not affected.
