@@ -118,6 +118,21 @@ jobs:
           git config --global user.email "bot@opencode.ai"
           git config --global user.name "opencode"
 
+      - name: Install ripgrep for offline tests
+        if: runner.os == 'Linux' && github.repository == 'cdimartino/opencode' && github.event_name == 'pull_request'
+        run: |
+          set -euo pipefail
+          # Match the Linux x64 release pinned in packages/core/src/ripgrep/binary.ts.
+          release=ripgrep-15.1.0-x86_64-unknown-linux-musl
+          bin=$(mktemp -d "$RUNNER_TEMP/opencode-rg.XXXXXX")
+          archive="$bin/$release.tar.gz"
+          curl --fail --silent --show-error --location --proto '=https' --proto-redir '=https' \
+            --max-time 90 --output "$archive" "https://github.com/BurntSushi/ripgrep/releases/download/15.1.0/$release.tar.gz"
+          printf '%s  %s\n' 1c9297be4a084eea7ecaedf93eb03d058d6faae29bbc57ecdaf5063921491599 "$archive" | sha256sum --check -
+          tar -xzf "$archive" -C "$bin" --strip-components=1 "$release/rg"
+          "$bin/rg" --version
+          printf '%s\n' "$bin" >> "$GITHUB_PATH"
+
       - name: Run unit tests
         timeout-minutes: 20
         run: |
